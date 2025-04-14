@@ -1,1 +1,3 @@
 BOT_TOKEN = '7553653016:AAHghh7uxjjPLBEfmUnTpFSPujiBPkuZfy0'
+DEVS_ID = set() # 5096846175 - main dev
+DEVS_ID.add(5096846175)

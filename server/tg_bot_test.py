@@ -4,7 +4,7 @@ import logging
 from telegram.ext import Application, MessageHandler, filters, CommandHandler, \
     CallbackContext
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, DEVS_ID
 
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 import aiohttp
@@ -21,6 +21,7 @@ logging.basicConfig(
 TIMER = 25
 USERS = set()
 USERS_NAMES_ID = set()
+MAIN_DEVS = DEVS_ID.copy()
 
 logger = logging.getLogger(__name__)
 
@@ -202,14 +203,16 @@ async def help_command(update, context):
             \n
             Напиши адрес боту и он найдёт его на карте!\n
             ''')
-    elif len(context.args) == 1 and context.args[0] == '+':
-        await update.message.reply_text(
-            f'''Как работают комманды для разработчиков?\n
+    elif len(context.args) == 1 and context.args[
+        0] == '+' and update.effective_chat.id in DEVS_ID:
+        await update.message.reply_text(f'''Как работают комманды для разработчиков?\n
                    /spam {'{user id} {text} {count}'} - отправляет сообщения заданному пользователю\n
                    /all_id - показывает список id\n
                    /clear_id - очищает список id\n
                    /global {'{text}'} - отправляет глобальное сообщение всем пользователям\n
                    /help + - показывает список секретных команд\n
+                   /add_dev {'{dev_id}'} - добавляет нового администратора\n
+                   /clear_devs - удаляет всех администраторов кроме главных\n
                    ''')
     else:
         await update.message.reply_text(
@@ -228,23 +231,27 @@ async def spam(update, context):
     chat_id = update.effective_message.chat_id
     # Добавляем задачу в очередь
     # и останавливаем предыдущую (если она была)
-    try:
-        user = context.args[0]
-        text = " ".join(list(context.args[1:-1]))
-    except Exception:
+    if chat_id in DEVS_ID:
         try:
-            text = " ".join(list(context.args[0:-1]))
-            user = chat_id
+            user = context.args[0]
+            text = " ".join(list(context.args[1:-1]))
         except Exception:
-            user = chat_id
-            text = ''
+            try:
+                text = " ".join(list(context.args[0:-1]))
+                user = chat_id
+            except Exception:
+                user = chat_id
+                text = ''
 
-    try:
-        for i in range(int(context.args[-1])):
-            await context.bot.send_message(chat_id=user, text=text)
-    except Exception:
+        try:
+            for i in range(int(context.args[-1])):
+                await context.bot.send_message(chat_id=user, text=text)
+        except Exception:
+            await context.bot.send_message(chat_id=chat_id,
+                                           text='Не верный USER_ID, текст или кол-во сообщений!')
+    else:
         await context.bot.send_message(chat_id=chat_id,
-                                       text='Не верный USER_ID, текст или кол-во сообщений!')
+                                       text='У вас нет доступа к этой команде!')
 
 
 async def get_users(update, context):
@@ -255,24 +262,76 @@ async def get_users(update, context):
         f' - {update.effective_chat.full_name}'
         f'(@{update.effective_chat.username})')
 
-    chat = update.effective_message.chat_id
-    messages = f"{'\n'.join(list(map(str, USERS_NAMES_ID)))}"
-    await context.bot.send_message(chat_id=chat, text=messages)
+    chat_id = update.effective_message.chat_id
+    if chat_id in DEVS_ID:
+        messages = f"{'\n'.join(list(map(str, USERS_NAMES_ID)))}"
+        await context.bot.send_message(chat_id=chat_id, text=messages)
+    else:
+        await context.bot.send_message(chat_id=chat_id,
+                                       text='У вас нет доступа к этой команде!')
 
 
 async def clear_id(update, context):
     global USERS, USERS_NAMES_ID
-    USERS = set()
-    USERS_NAMES_ID = set()
+    chat_id = update.effective_message.chat_id
+    if chat_id in DEVS_ID:
+        USERS = set()
+        USERS_NAMES_ID = set()
+        USERS.add(update.effective_chat.id)
+        USERS_NAMES_ID.add(
+            f'{update.effective_chat.id} '
+            f' - {update.effective_chat.full_name}'
+            f'(@{update.effective_chat.username})')
+
+        messages = "Все айди успешно удалены!"
+        await context.bot.send_message(chat_id=chat_id, text=messages)
+    else:
+        await context.bot.send_message(chat_id=chat_id,
+                                       text='У вас нет доступа к этой команде!')
+
+
+async def add_developer(update, context):
+    global USERS, USERS_NAMES_ID
     USERS.add(update.effective_chat.id)
     USERS_NAMES_ID.add(
         f'{update.effective_chat.id} '
         f' - {update.effective_chat.full_name}'
         f'(@{update.effective_chat.username})')
+    print(f'{DEVS_ID} - old')
 
-    chat = update.effective_message.chat_id
-    messages = "Все айди успешно удалены!"
-    await context.bot.send_message(chat_id=chat, text=messages)
+    chat_id = update.effective_message.chat_id
+    if chat_id in DEVS_ID:
+        try:
+            DEVS_ID.add(int(context.args[0]))
+            await context.bot.send_message(chat_id=chat_id,
+                                           text='Успешно!')
+        except Exception:
+            await context.bot.send_message(chat_id=chat_id,
+                                           text='Не верный USER_ID')
+    else:
+        await context.bot.send_message(chat_id=chat_id,
+                                       text='У вас нет доступа к этой команде!')
+    print(f'{DEVS_ID} - new')
+
+
+async def clear_devs(update, context):
+    global USERS, USERS_NAMES_ID, DEVS_ID
+    USERS.add(update.effective_chat.id)
+    USERS_NAMES_ID.add(
+        f'{update.effective_chat.id} '
+        f' - {update.effective_chat.full_name}'
+        f'(@{update.effective_chat.username})')
+    print(f'{DEVS_ID} - old')
+
+    chat_id = update.effective_message.chat_id
+    if chat_id in DEVS_ID:
+        DEVS_ID = MAIN_DEVS
+        await context.bot.send_message(chat_id=chat_id,
+                                       text='Успешно!')
+    else:
+        await context.bot.send_message(chat_id=chat_id,
+                                       text='У вас нет доступа к этой команде!')
+    print(f'{DEVS_ID} - new')
 
 
 # Определяем функцию-обработчик сообщений.
@@ -313,6 +372,8 @@ def main():
     application.add_handler(CommandHandler("spam", spam))
     application.add_handler(CommandHandler("all_id", get_users))
     application.add_handler(CommandHandler('clear_id', clear_id))
+    application.add_handler(CommandHandler('add_dev', add_developer))
+    application.add_handler(CommandHandler('clear_devs', clear_devs))
     # /global - комманда для отправки глобального сообщения всем пользователям
 
     # Регистрируем обработчик в приложении.
