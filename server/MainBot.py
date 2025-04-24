@@ -4,13 +4,12 @@ from ctypes import pythonapi
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from tovar_bot import *
-from test_config import BOT_TOKEN
+from config import BOT_TOKEN
 import config_botT
 import logging
 import sys
 import subprocess
 import os
-
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -58,6 +57,15 @@ async def handle_tovar_button(call: types.CallbackQuery):
     # Запускаем новую программу
     dp.start_polling(Bot(token=config_botT.BOT_TOKEN))
     await main_tovar()
+
+
+@dp.message(Command('help'))
+async def redirection_tovar(message: types.Message):
+    await message.reply(f"""
+    Список имен ботов:
+       (товары) @Tovar_HeBot
+       (достопримечательности) @Dostoprimechatelnost_HeBot
+       (еда) @Eda_HeBot""")
 
 
 if __name__ == '__main__':
