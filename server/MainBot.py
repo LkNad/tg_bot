@@ -64,4 +64,4 @@ async def handle_tovar_button(call: types.CallbackQuery):
 if __name__ == '__main__':
     asyncio.run(main())
     if open_tovar:
-        asyncio.run(main_tovar(main()))
+        asyncio.run(main_tovar())

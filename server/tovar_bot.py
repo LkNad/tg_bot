@@ -8,14 +8,12 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
-from config import BOT_TOKEN
-from config_botT import DEVS_ID
+from config_botT import DEVS_ID, BOT_TOKEN
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 USERS_NAMES_ID = set()
-old_main = None
 
 
 class AddProductStates(StatesGroup):
@@ -221,9 +219,7 @@ async def search_product(message: types.Message):
 
 
 # Функция запуска бота
-async def main_tovar(old = None):
-    global old_main
-    old_main = old
+async def main_tovar():
     await dp.start_polling(bot)
 
 
