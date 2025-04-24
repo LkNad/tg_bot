@@ -19,6 +19,7 @@ logging.basicConfig(
 dp = Dispatcher()
 bot = None
 
+open_tovar = False
 
 async def main():
     global bot
@@ -47,26 +48,20 @@ async def process_start_command(message: types.Message):
 # Обработчик нажатия кнопки Товара
 @dp.callback_query(lambda call: call.data == 'tovar')
 async def handle_tovar_button(call: types.CallbackQuery):
+    global open_tovar
     # Подтверждение выбора
     await call.answer("Запускаю поиск товаров...")
 
     # Закрываем соединение с ботом и прекращаем обработку событий
-    if bot is not None:
-        await bot.session.close()
+    open_tovar = True
+    await bot.session.close()
+    await dp.stop_polling()
 
     # Запускаем новую программу
-    dp.start_polling(Bot(token=config_botT.BOT_TOKEN))
-    await main_tovar()
 
-
-@dp.message(Command('help'))
-async def redirection_tovar(message: types.Message):
-    await message.reply(f"""
-    Список имен ботов:
-       (товары) @Tovar_HeBot
-       (достопримечательности) @Dostoprimechatelnost_HeBot
-       (еда) @Eda_HeBot""")
 
 
 if __name__ == '__main__':
     asyncio.run(main())
+    if open_tovar:
+        asyncio.run(main_tovar(main()))

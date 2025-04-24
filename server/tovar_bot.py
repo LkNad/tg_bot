@@ -1,16 +1,21 @@
 import sqlite3
+import asyncio
+from idlelib.run import Executive
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
-from config_botT import BOT_TOKEN, DEVS_ID
+from config import BOT_TOKEN
+from config_botT import DEVS_ID
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 USERS_NAMES_ID = set()
+old_main = None
 
 
 class AddProductStates(StatesGroup):
@@ -52,6 +57,8 @@ async def start_command(message: types.Message):
         /help or /start - выводит список комманд
         """
     await message.answer(help_message)
+
+
 
 
 @dp.message(Command('develop'))
@@ -184,7 +191,6 @@ async def handle_callback_query(call: types.CallbackQuery):
     await call.answer("Запрашиваю данные...", cache_time=5)
 
 
-
 @dp.message(F.text)
 async def search_product(message: types.Message):
     user_input = message.text.lower()
@@ -215,7 +221,9 @@ async def search_product(message: types.Message):
 
 
 # Функция запуска бота
-async def main_tovar():
+async def main_tovar(old = None):
+    global old_main
+    old_main = old
     await dp.start_polling(bot)
 
 
