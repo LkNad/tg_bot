@@ -1,3 +1,0 @@
-DEVS_ID = set() # 5096846175 - main dev
-DEVS_ID.add(5096846175)
-BOT_TOKEN_shifred = '75788142:AAGznV0objH242DX-Ul9npJs1a0R9lUCbLf13'

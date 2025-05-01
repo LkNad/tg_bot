@@ -8,7 +8,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
-from config_botT import DEVS_ID, BOT_TOKEN_shifred
+from config import BOT_TOKEN_shifred
+from const import DEVS_ID
 
 
 # Защита от посторонних глаз
