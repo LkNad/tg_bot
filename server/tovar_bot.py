@@ -8,7 +8,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
-from config_botT import DEVS_ID, BOT_TOKEN
+from config_botT import DEVS_ID, BOT_TOKEN_shifred
+
+
+# Защита от посторонних глаз
+from de_shifre import de_shifre
+BOT_TOKEN = de_shifre(BOT_TOKEN_shifred)
+
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()

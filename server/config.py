@@ -1,1 +1,1 @@
-BOT_TOKEN = '7769792657:AAFoAeBnKdSkZ38eMWK6vfgGnXx8xHw4TQw'
+BOT_TOKEN_shifred = 'Времменно отсутствует'

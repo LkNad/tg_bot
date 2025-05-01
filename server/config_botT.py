@@ -1,3 +1,3 @@
 DEVS_ID = set() # 5096846175 - main dev
 DEVS_ID.add(5096846175)
-BOT_TOKEN = '7662296776:AAEPbMlyWHEcl1aauYlN7qpyxSn5QFM46Hw'
+BOT_TOKEN_shifred = 'Времменно отсутствует'
