@@ -3,17 +3,17 @@ from ctypes import pythonapi
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+from pyexpat.errors import messages
+
 from tovar_bot import *
-from config import BOT_TOKEN_shifred
-import config_botT
+from config import BOT_TOKEN
 import logging
 import sys
 import subprocess
 import os
 
 # Защита от посторонних глаз
-from de_shifre import de_shifre
-BOT_TOKEN = de_shifre(BOT_TOKEN_shifred)
+
 
 
 logging.basicConfig(
@@ -26,6 +26,7 @@ bot = None
 
 open_tovar = False
 
+
 async def main():
     global bot
     bot = Bot(token=BOT_TOKEN)
@@ -36,7 +37,7 @@ async def main():
 async def process_start_command(message: types.Message):
     button1 = types.InlineKeyboardButton(text="Достопримечательность",
                                          url="http://t.me/Dostoprimechatelnost_HeBot")
-    button2 = types.InlineKeyboardButton(text="Товар", callback_data="tovar", url="http://t.me/Dostoprimechatelnost_HeBot")
+    button2 = types.InlineKeyboardButton(text="Товар", callback_data="tovar")
     button3 = types.InlineKeyboardButton(text="Еда",
                                          url="http://t.me/Eda_HeBot")
 
@@ -50,23 +51,12 @@ async def process_start_command(message: types.Message):
                         reply_markup=keyboard)
 
 
-# Обработчик нажатия кнопки Товара
 @dp.callback_query(lambda call: call.data == 'tovar')
 async def handle_tovar_button(call: types.CallbackQuery):
     global open_tovar
     # Подтверждение выбора
     await call.answer("Запускаю поиск товаров...")
 
-    # Закрываем соединение с ботом и прекращаем обработку событий
-    open_tovar = True
-    await bot.session.close()
-    await dp.stop_polling()
-
-    # Запускаем новую программу
-
-
 
 if __name__ == '__main__':
     asyncio.run(main())
-    if open_tovar:
-        asyncio.run(main_tovar())

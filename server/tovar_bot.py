@@ -8,14 +8,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
-from config import BOT_TOKEN_shifred
+from config import BOT_TOKEN
 from const import DEVS_ID
-
-
-# Защита от посторонних глаз
-from de_shifre import de_shifre
-BOT_TOKEN = de_shifre(BOT_TOKEN_shifred)
-
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -46,9 +40,9 @@ conn.commit()
 
 
 # Обработчик старта (/start и /help), выводящий приветствие и доступный список команд
-@dp.message(Command('start'))
-@dp.message(Command('help'))
-async def start_command(message: types.Message):
+@dp.message(Command('start_tovars'))
+@dp.message(Command('help_tovars'))
+async def start_tovars(message: types.Message):
     global USERS_NAMES_ID
     USERS_NAMES_ID.add(
         f'{message.from_user.id} '
@@ -56,18 +50,17 @@ async def start_command(message: types.Message):
         f'(@{message.from_user.username})')
 
     help_message = """
-        Привет! Это бот для добавления товаров в каталог.
+        Привет! Это бот для поиска товаров в каталоге.
         Доступные команды:
         /develop - показывает список всех комманд (только для разработчиков)
-        /help or /start - выводит список комманд
+        /help_tovars or /start_tovars - выводит список комманд
+        Напиши название товара чтобы его найти!
         """
     await message.answer(help_message)
 
 
-
-
 @dp.message(Command('develop'))
-async def start_command(message: types.Message):
+async def help_tovars_devs(message: types.Message):
     global USERS_NAMES_ID
     USERS_NAMES_ID.add(
         f'{message.from_user.id} '
@@ -223,13 +216,3 @@ async def search_product(message: types.Message):
     await message.answer(f'''Вот что я смог найти на алиэкспрес:\n
     https://aliexpress.ru/wholesale?SearchText={user_input}
         ''')
-
-
-# Функция запуска бота
-async def main_tovar():
-    await dp.start_polling(bot)
-
-
-# Запускаем бота
-if __name__ == "__main__":
-    main_tovar()
