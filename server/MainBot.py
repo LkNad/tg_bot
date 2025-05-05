@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pyexpat.errors import messages
 
-from tovar_bot import *
+
 from config import BOT_TOKEN
 import logging
 import sys
@@ -24,7 +24,7 @@ logging.basicConfig(
 dp = Dispatcher()
 bot = None
 
-open_tovar = False
+OPEN_TOVAR = False
 
 
 async def main():
@@ -47,16 +47,27 @@ async def process_start_command(message: types.Message):
         [button3]
     ])
 
-    await message.reply("Привет! Выбери, что ты хочешь найти:",
+    await message.reply("""Привет! Выбери, что ты хочешь найти:
+    Товар: t.me/Tovar_HeBot (бот запустится после надатия кнопки)""",
                         reply_markup=keyboard)
+
 
 
 @dp.callback_query(lambda call: call.data == 'tovar')
 async def handle_tovar_button(call: types.CallbackQuery):
-    global open_tovar
-    # Подтверждение выбора
-    await call.answer("Запускаю поиск товаров...")
+    global bot
+    await call.answer("Запускаю поиск товаров...", show_alert=True)
+    await asyncio.create_task(start_tovar_mode())
 
+
+
+
+async def start_tovar_mode():
+    from tovar_bot import main_tovar
+    await main_tovar()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Прервано вручную.")
