@@ -8,13 +8,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
-from config_botT import DEVS_ID, BOT_TOKEN
+from config_tovar import BOT_TOKEN
+from const import DEVS_ID
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 USERS_NAMES_ID = set()
-
 
 class AddProductStates(StatesGroup):
     waiting_for_yandex_link = State()
@@ -41,7 +41,7 @@ conn.commit()
 # Обработчик старта (/start и /help), выводящий приветствие и доступный список команд
 @dp.message(Command('start'))
 @dp.message(Command('help'))
-async def start_command(message: types.Message):
+async def start_tovars(message: types.Message):
     global USERS_NAMES_ID
     USERS_NAMES_ID.add(
         f'{message.from_user.id} '
@@ -49,18 +49,30 @@ async def start_command(message: types.Message):
         f'(@{message.from_user.username})')
 
     help_message = """
-        Привет! Это бот для добавления товаров в каталог.
+        Привет! Это бот для поиска товаров в каталоге.
         Доступные команды:
         /develop - показывает список всех комманд (только для разработчиков)
         /help or /start - выводит список комманд
+        Напиши название товара чтобы его найти!
         """
-    await message.answer(help_message)
+
+    button1 = types.InlineKeyboardButton(text="Завершить сеанс",
+                                         callback_data="back")
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[button1]])
+
+    await message.answer(help_message, reply_markup=keyboard)
 
 
+@dp.callback_query(lambda call: call.data == 'back')
+async def handle_back_button(call: types.CallbackQuery):
+    await call.answer("Завершаем работу...")
+    await start_tovars(call.message)
+    await bot.session.close()
+    await dp.stop_polling()
 
 
 @dp.message(Command('develop'))
-async def start_command(message: types.Message):
+async def help_tovars_devs(message: types.Message):
     global USERS_NAMES_ID
     USERS_NAMES_ID.add(
         f'{message.from_user.id} '
@@ -220,9 +232,6 @@ async def search_product(message: types.Message):
 
 # Функция запуска бота
 async def main_tovar():
+    global bot
+    bot = Bot(token=BOT_TOKEN)
     await dp.start_polling(bot)
-
-
-# Запускаем бота
-if __name__ == "__main__":
-    main_tovar()
