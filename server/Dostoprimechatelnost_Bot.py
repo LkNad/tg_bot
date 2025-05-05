@@ -73,7 +73,7 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(str(tag))
 
 def main():
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN_2).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_city))
 
