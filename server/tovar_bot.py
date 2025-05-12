@@ -11,10 +11,13 @@ from aiogram import F
 from config_tovar import BOT_TOKEN
 from const import DEVS_ID
 
+import aiohttp
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 USERS_NAMES_ID = set()
+
 
 class AddProductStates(StatesGroup):
     waiting_for_yandex_link = State()
@@ -68,7 +71,7 @@ async def get_url(message: types.Message):
     messages = "Вот кнопка для возвращения:"
 
     button1 = types.InlineKeyboardButton(text="Global-бот (ссылка)",
-                                           url="t.me/MainCo6akaBot")
+                                         url="t.me/MainCo6akaBot")
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[button1]])
 
     await message.answer(messages, reply_markup=keyboard)
@@ -235,10 +238,43 @@ async def search_product(message: types.Message):
 
 @dp.message(F.text)
 async def search_product(message: types.Message):
-    user_input = "+".join(message.text.lower().split())
-    await message.answer(f'''Вот что я смог найти на алиэкспрес:\n
-    https://aliexpress.ru/wholesale?SearchText={user_input}
-        ''')
+    user_input = message.text.lower().split()
+
+    search_url = f"https://market.yandex.ru/search?text={user_input}"
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Отправляем GET-запрос на Yandex Market
+            async with session.get(search_url) as response:
+                max_length = 4096
+
+
+                    # Получаем полный HTML-код страницы
+                page_html = await response.text()
+
+                # Ограничиваем длину вывода, чтобы избежать превышения лимита Telegram max_length =4096
+                truncated_html = page_html[:max_length]
+
+                # Отсылаем полученный HTML обратно пользователю
+                await bot.send_message(
+                    chat_id=message.chat.id,
+                    text=f"Полученный HTML:\n\n{truncated_html}",
+                    parse_mode=None
+                )
+
+                # answer_code = page_html.split(
+                #     '<li class="dDhtc BH2ph _1MOwX _1bCJz"')
+                # answer_code = answer_code[1]
+                #
+                # from pprint import pprint
+                #
+                # pprint(answer_code)
+                # print("\n")
+
+
+        except Exception as e:
+            await bot.send_message(chat_id=message.chat.id,
+                                   text=f"Возникла ошибка: {e}")
 
 
 # Функция запуска бота
