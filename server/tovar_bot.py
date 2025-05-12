@@ -1,6 +1,6 @@
 import sqlite3
 import asyncio
-from idlelib.run import Executive
+from http.cookiejar import reach
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -240,37 +240,39 @@ async def search_product(message: types.Message):
 async def search_product(message: types.Message):
     user_input = message.text.lower().split()
 
-    search_url = f"https://market.yandex.ru/search?text={user_input}"
+    search_url = f"https://aliexpress.ru/wholesale?SearchText={user_input}"
 
     async with aiohttp.ClientSession() as session:
         try:
             # Отправляем GET-запрос на Yandex Market
             async with session.get(search_url) as response:
-                max_length = 4096
+
 
 
                     # Получаем полный HTML-код страницы
+
                 page_html = await response.text()
 
                 # Ограничиваем длину вывода, чтобы избежать превышения лимита Telegram max_length =4096
-                truncated_html = page_html[:max_length]
+
 
                 # Отсылаем полученный HTML обратно пользователю
+                # await bot.send_message(
+                #     chat_id=message.chat.id,
+                #     text=f"Полученный HTML:\n\n{truncated_html}",
+                #     parse_mode=None
+                # )
+
+                answer_code = page_html.split(
+                    '<div class="red-snippet_RedSnippet__mainBlock__e15tmk">"')[1]
+                url_res = answer_code.split('href="')[1].split('"')[0]
+
+                img_url = 0
+
                 await bot.send_message(
                     chat_id=message.chat.id,
-                    text=f"Полученный HTML:\n\n{truncated_html}",
-                    parse_mode=None
-                )
-
-                # answer_code = page_html.split(
-                #     '<li class="dDhtc BH2ph _1MOwX _1bCJz"')
-                # answer_code = answer_code[1]
-                #
-                # from pprint import pprint
-                #
-                # pprint(answer_code)
-                # print("\n")
-
+                    text=f"Получен URl:\n\n{url_res}",
+                    parse_mode=None)
 
         except Exception as e:
             await bot.send_message(chat_id=message.chat.id,
