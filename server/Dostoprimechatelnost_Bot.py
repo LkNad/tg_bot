@@ -7,6 +7,10 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     ContextTypes, filters
 )
+import re
+
+# Регулярное выражение для поиска ссылок
+pattern = r'https://[^\s]+\.jpg'
 
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,7 +74,11 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Не найдено подходящих изображений.")
     else:
         for tag in result:
-            await update.message.reply_text(str(tag))
+            # Поиск всех совпадений
+            matches = re.findall(pattern, str(tag))
+            # Получение первой ссылки, если она существует
+            first_link = matches[0] if matches else None
+            await update.message.reply_text(first_link)
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
