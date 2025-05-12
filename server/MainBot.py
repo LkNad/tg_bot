@@ -37,18 +37,20 @@ async def main():
 async def process_start_command(message: types.Message):
     button1 = types.InlineKeyboardButton(text="Достопримечательность",
                                          url="http://t.me/Dostoprimechatelnost_HeBot")
-    button2 = types.InlineKeyboardButton(text="Товар", callback_data="tovar")
+    button2_1 = types.InlineKeyboardButton(text="Товар-бот (ссылка)",
+                                         url="t.me/Tovar_HeBot")
+    button2 = types.InlineKeyboardButton(text="запуск Товар-бота", callback_data="tovar")
     button3 = types.InlineKeyboardButton(text="Еда",
                                          url="http://t.me/Eda_HeBot")
 
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [button1],
+        [button2_1],
         [button2],
         [button3]
     ])
 
-    await message.reply("""Привет! Выбери, что ты хочешь найти:
-    Товар: t.me/Tovar_HeBot (бот запустится после надатия кнопки)""",
+    await message.reply("""Привет! Выбери, что ты хочешь найти:""",
                         reply_markup=keyboard)
 
 

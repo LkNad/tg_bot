@@ -63,10 +63,21 @@ async def start_tovars(message: types.Message):
     await message.answer(help_message, reply_markup=keyboard)
 
 
+@dp.message(Command('get_url'))
+async def get_url(message: types.Message):
+    messages = "Вот кнопка для возвращения:"
+
+    button1 = types.InlineKeyboardButton(text="Global-бот (ссылка)",
+                                           url="t.me/MainCo6akaBot")
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[button1]])
+
+    await message.answer(messages, reply_markup=keyboard)
+
+
 @dp.callback_query(lambda call: call.data == 'back')
 async def handle_back_button(call: types.CallbackQuery):
     await call.answer("Завершаем работу...")
-    await start_tovars(call.message)
+    await get_url(call.message)
     await bot.session.close()
     await dp.stop_polling()
 
