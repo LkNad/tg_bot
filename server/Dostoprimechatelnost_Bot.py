@@ -21,7 +21,7 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     city_ru = update.message.text
     context.user_data["city_ru"] = city_ru
 
-    await update.message.reply_text(f"Город {city_ru} принят. Ищу фотографии...")
+    await update.message.reply_text(f"Город {city_ru} принят. Ищу достопримечательности...")
 
     # Перевод с русского на английский
     try:
@@ -46,6 +46,12 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     html = response.text
     soup = BeautifulSoup(html, 'html.parser')
+
+    # Ищем описания достопримечательностей
+    description_divs = soup.find_all("div", class_="img_right2")
+    descriptions = [div.get_text(strip=True) for div in description_divs[:2]]
+
+    # Ищем изображения
     img_tags = soup.find_all('img')
 
     if len(img_tags) <= 7:
@@ -53,7 +59,7 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     filtered_tags = img_tags[6:-1]
-    result = []
+    image_links = []
 
     for tag in filtered_tags:
         width = tag.get('width')
@@ -66,19 +72,22 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
             continue
 
         if w >= 100 and h >= 100:
-            result.append(tag)
-            if len(result) == 2:
+            matches = re.findall(r'https://[^\s]+\.jpg', str(tag))
+            if matches:
+                image_links.append(matches[0])
+            if len(image_links) == 2:
                 break
 
-    if not result:
-        await update.message.reply_text("Не найдено подходящих изображений.")
+    # Отправляем по очереди: картинка и описание
+    if not image_links:
+        await update.message.reply_text("Не удалось найти подходящие изображения.")
     else:
-        for tag in result:
-            # Поиск всех совпадений
-            matches = re.findall(pattern, str(tag))
-            # Получение первой ссылки, если она существует
-            first_link = matches[0] if matches else None
-            await update.message.reply_text(first_link)
+        for i in range(len(image_links)):
+            await update.message.reply_photo(photo=image_links[i])
+            if i < len(descriptions):
+                await update.message.reply_text(descriptions[i])
+
+
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
