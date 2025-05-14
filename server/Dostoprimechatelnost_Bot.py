@@ -33,6 +33,8 @@ async def handle_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Заменяем пробелы на нижнее подчеркивание
     city_en = city_en.replace(" ", "_").lower()
     city_en = city_en.replace("ny_", "niy_")
+    city_en = city_en.replace("ky_", "kiy_")
+    city_en = city_en.replace("terrible", "groznyy")
 
     url = f"https://www.tourister.ru/world/europe/russia/city/{city_en}"
     headers = {"User-Agent": "Mozilla/5.0"}
