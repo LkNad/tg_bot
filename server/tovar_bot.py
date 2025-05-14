@@ -1,11 +1,17 @@
 import sqlite3
 import asyncio
-from http.cookiejar import reach
+
+import requests
+import platform
+import random
+from bs4 import BeautifulSoup
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+
+from aiogram.types import FSInputFile
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
 from config_tovar import BOT_TOKEN
@@ -39,6 +45,102 @@ CREATE TABLE IF NOT EXISTS products (
 );
 ''')
 conn.commit()
+
+system_info = platform.system()
+
+USER_AGENT_WINDOWS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/113.0.1774.35 Safari/537.36"
+]
+
+USER_AGENT_LINUX = [
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+    "Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+]
+
+USER_AGENT_MACOS = [
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/113.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15"
+]
+
+headers = {
+    'User-Agent': '',
+    'origin': 'https://www.onlinetrade.ru',
+    'referer': 'https://www.onlinetrade.ru/'
+}
+# Выбор подходящего User-Agent в зависимости от ОС
+if system_info == "Windows":
+    headers["User-Agent"] = random.choice(USER_AGENT_WINDOWS)
+elif system_info == "Linux":
+    headers["User-Agent"] = random.choice(USER_AGENT_LINUX)
+elif system_info == "Darwin":  # macOS
+    headers["User-Agent"] = random.choice(USER_AGENT_MACOS)
+else:
+    raise ValueError(f"Unsupported operating system: {system_info}")
+
+import time
+from cok import cookies
+
+session = requests.Session()
+
+
+def search_product(query):
+    base_url = f'https://www.illeon.ru/search/index.php'
+    base_query = {
+        'q': '%F2%F0%E8%EC%EC%E5%F0&s=',
+        's': ''
+    }
+    max_retries = 3
+    retry_delay = 5
+
+    for attempt in range(max_retries):
+        # try:
+        time.sleep(random.uniform(1, 3))
+        response = session.get(base_url, headers=headers, cookies=cookies,
+                               params=base_query)
+
+        print(response)
+        print('\n')
+        if response.status_code == 429:
+            print(f"Ошибка 429. Попытка {attempt + 1} из {max_retries}")
+            time.sleep(retry_delay)
+            continue
+
+        if response.status_code != 200:
+            print(f"Ошибка: {response.status_code}")
+            return None
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        print(soup)
+        print('\n')
+        prod = soup.select_one('one_el_cat_pre')
+        print(prod)
+
+        if prod:
+            href = prod.find('a')['href']
+            title = prod.find('div',
+                              class_='one_el_cat_pre')['data-sort-name']
+            price = prod.find('div',
+                              class_='one_el_cat_pre')['data-sort-price']
+            img_src = prod.find('img')['src']
+
+            return {
+                'title': title,
+                'price': price,
+                'image_url': img_src,
+                'link': f'{base_url}{href}'
+            }
+        else:
+            return None
+
+    # except Exception as e:
+    #     print(f"Ошибка E: {e}")
+    #     time.sleep(retry_delay)
+
+    return None
 
 
 # Обработчик старта (/start и /help), выводящий приветствие и доступный список команд
@@ -216,7 +318,7 @@ async def handle_callback_query(call: types.CallbackQuery):
 
 
 @dp.message(F.text)
-async def search_product(message: types.Message):
+async def search_product1(message: types.Message):
     user_input = message.text.lower()
     cursor.execute(
         "SELECT title, image_link, price, yandex_link FROM products WHERE LOWER(title) LIKE ?",
@@ -232,51 +334,29 @@ async def search_product(message: types.Message):
             """
         await message.answer(answer_text)
     else:
-        await search_product(message)
-        # await message.answer("Не удалось найти товар.")
+        # await process_user_query(message)
+        await message.answer("Не удалось найти товар.")
 
 
 @dp.message(F.text)
-async def search_product(message: types.Message):
-    user_input = message.text.lower().split()
+async def process_user_query(message: types.Message):
+    user_input = message.text
+    result = search_product(user_input)
 
-    search_url = f"https://aliexpress.ru/wholesale?SearchText={user_input}"
-
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Отправляем GET-запрос на Yandex Market
-            async with session.get(search_url) as response:
-
-
-
-                    # Получаем полный HTML-код страницы
-
-                page_html = await response.text()
-
-                # Ограничиваем длину вывода, чтобы избежать превышения лимита Telegram max_length =4096
-
-
-                # Отсылаем полученный HTML обратно пользователю
-                # await bot.send_message(
-                #     chat_id=message.chat.id,
-                #     text=f"Полученный HTML:\n\n{truncated_html}",
-                #     parse_mode=None
-                # )
-
-                answer_code = page_html.split(
-                    '<div class="red-snippet_RedSnippet__mainBlock__e15tmk">"')[1]
-                url_res = answer_code.split('href="')[1].split('"')[0]
-
-                img_url = 0
-
-                await bot.send_message(
-                    chat_id=message.chat.id,
-                    text=f"Получен URl:\n\n{url_res}",
-                    parse_mode=None)
-
-        except Exception as e:
-            await bot.send_message(chat_id=message.chat.id,
-                                   text=f"Возникла ошибка: {e}")
+    if result:
+        answer_text = (
+            f"<b>{result['title']}</b>\n\n"
+            f"Цена: {result['price']}\n\n"
+            f"Ссылка: {result['link']}"
+        )
+        await bot.send_photo(
+            chat_id=message.chat.id,
+            photo=result['image_url'],
+            caption=answer_text,
+            parse_mode='HTML'
+        )
+    else:
+        await message.answer("Товар не найден или произошла ошибка.")
 
 
 # Функция запуска бота
