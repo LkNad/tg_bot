@@ -2,9 +2,6 @@ import sqlite3
 import asyncio
 
 import requests
-import platform
-import random
-from bs4 import BeautifulSoup
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -30,117 +27,46 @@ class AddProductStates(StatesGroup):
     waiting_for_image_link = State()
     waiting_for_price = State()
     waiting_for_title = State()
+    waiting_for_type_car = State()
 
 
-conn = sqlite3.connect('yandex_market.db')
+conn = sqlite3.connect('cars.db')
 cursor = conn.cursor()
 
 cursor.execute('''
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS all_cars (
     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT,
     image_link TEXT,
     price REAL,
-    yandex_link TEXT
+    yandex_link TEXT,
+    type_car TEXT
 );
 ''')
 conn.commit()
 
-system_info = platform.system()
-
-USER_AGENT_WINDOWS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/113.0.1774.35 Safari/537.36"
-]
-
-USER_AGENT_LINUX = [
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
-    "Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
-]
-
-USER_AGENT_MACOS = [
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/113.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15"
-]
-
-headers = {
-    'User-Agent': '',
-    'origin': 'https://www.onlinetrade.ru',
-    'referer': 'https://www.onlinetrade.ru/'
-}
-# Выбор подходящего User-Agent в зависимости от ОС
-if system_info == "Windows":
-    headers["User-Agent"] = random.choice(USER_AGENT_WINDOWS)
-elif system_info == "Linux":
-    headers["User-Agent"] = random.choice(USER_AGENT_LINUX)
-elif system_info == "Darwin":  # macOS
-    headers["User-Agent"] = random.choice(USER_AGENT_MACOS)
-else:
-    raise ValueError(f"Unsupported operating system: {system_info}")
-
-import time
-from cok import cookies
-
-session = requests.Session()
+from car_mark import sercher
 
 
-def search_product(query):
-    base_url = f'https://www.illeon.ru/search/index.php'
-    base_query = {
-        'q': '%F2%F0%E8%EC%EC%E5%F0&s=',
-        's': ''
-    }
-    max_retries = 3
-    retry_delay = 5
-
-    for attempt in range(max_retries):
-        # try:
-        time.sleep(random.uniform(1, 3))
-        response = session.get(base_url, headers=headers, cookies=cookies,
-                               params=base_query)
-
-        print(response)
-        print('\n')
-        if response.status_code == 429:
-            print(f"Ошибка 429. Попытка {attempt + 1} из {max_retries}")
-            time.sleep(retry_delay)
-            continue
-
-        if response.status_code != 200:
-            print(f"Ошибка: {response.status_code}")
-            return None
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-        print(soup)
-        print('\n')
-        prod = soup.select_one('one_el_cat_pre')
-        print(prod)
-
-        if prod:
-            href = prod.find('a')['href']
-            title = prod.find('div',
-                              class_='one_el_cat_pre')['data-sort-name']
-            price = prod.find('div',
-                              class_='one_el_cat_pre')['data-sort-price']
-            img_src = prod.find('img')['src']
-
-            return {
-                'title': title,
-                'price': price,
-                'image_url': img_src,
-                'link': f'{base_url}{href}'
-            }
+def search_car(user_input):
+    user_input = sercher(user_input)
+    if user_input is not None:
+        cursor.execute(
+            "SELECT title, image_link, price, yandex_link, type_car FROM all_cars WHERE LOWER(type_car) LIKE ?",
+            ('%' + user_input.lower() + '%',))
+        result = cursor.fetchone()
+        if result:
+            title, image_link, price, yandex_link, type_car = result
+            answer_text = {'title': f'{title}',
+                           'price': f"{price:.2f} руб.",
+                           'image_url': f'{image_link}',
+                           'link': f'{yandex_link}',
+                           'type': f'{type_car}'}
+            return answer_text
         else:
             return None
-
-    # except Exception as e:
-    #     print(f"Ошибка E: {e}")
-    #     time.sleep(retry_delay)
-
-    return None
+    else:
+        return None
 
 
 # Обработчик старта (/start и /help), выводящий приветствие и доступный список команд
@@ -154,11 +80,12 @@ async def start_tovars(message: types.Message):
         f'(@{message.from_user.username})')
 
     help_message = """
-        Привет! Это бот для поиска товаров в каталоге.
+        Привет! Это бот для поиска машины по её марке.
         Доступные команды:
         /develop - показывает список всех комманд (только для разработчиков)
         /help or /start - выводит список комманд
-        Напиши название товара чтобы его найти!
+        /list - список доступных марок
+        Напиши название марки машины чтобы найти её!
         """
 
     button1 = types.InlineKeyboardButton(text="Завершить сеанс",
@@ -197,8 +124,9 @@ async def help_tovars_devs(message: types.Message):
 
     if message.from_user.id in DEVS_ID:
         help_message = """
-        /add_tovar - добавить новый товар (только для разработчиов)
+        /add - добавить новый товар (только для разработчиов)
         /help or /start - выводит список комманд
+        /list - выводит список всех доступных марок
         /develop - показывает список всех комманд (только для разработчиков)
         /add_dev - добавление нового временного разработчика
         /all_id - выводит список всех id и никноймов пользователей
@@ -209,8 +137,24 @@ async def help_tovars_devs(message: types.Message):
             "У вас недостаточно прав для выполнения данной команды.")
 
 
+@dp.message(Command('list'))
+async def add_new_product(message: types.Message, state: FSMContext):
+    global USERS_NAMES_ID
+    USERS_NAMES_ID.add(
+        f'{message.from_user.id} '
+        f' - {message.from_user.full_name}'
+        f'(@{message.from_user.username})')
+
+    import car_mark
+    res1 = "\n".join(car_mark.eng_marks)
+    res2 = "\n".join(car_mark.ru_marks)
+    res = res1 + "\n" + res2
+
+    await message.answer(res)
+
+
 # Обработчик команды /add_tovar
-@dp.message(Command('add_tovar'))
+@dp.message(Command('add'))
 async def add_new_product(message: types.Message, state: FSMContext):
     global USERS_NAMES_ID
     USERS_NAMES_ID.add(
@@ -219,7 +163,7 @@ async def add_new_product(message: types.Message, state: FSMContext):
         f'(@{message.from_user.username})')
 
     if message.from_user.id in DEVS_ID:
-        await message.answer("Отправьте ссылку на товар:")
+        await message.answer("Отправьте ссылку на авто:")
         await state.set_state(AddProductStates.waiting_for_yandex_link)
     else:
         await message.answer(
@@ -285,13 +229,25 @@ async def receive_image_link(message: types.Message, state: FSMContext):
 @dp.message(AddProductStates.waiting_for_price)
 async def receive_price(message: types.Message, state: FSMContext):
     try:
-        price = float(message.text.replace(',', '.'))
+        price = float("".join(message.text.split()).replace(',', '.'))
         await state.update_data(price=price)
-        await message.answer("Введите название товара:")
-        await state.set_state(AddProductStates.waiting_for_title)
+        await message.answer("Введите марку машины:")
+        await state.set_state(AddProductStates.waiting_for_type_car)
     except ValueError:
         await message.answer(
             "Некорректный формат цены. Используйте цифры и точку/запятую.")
+
+
+# Получаем тип машины изображение
+@dp.message(AddProductStates.waiting_for_type_car)
+async def receive_image_link(message: types.Message, state: FSMContext):
+    type_car = sercher(message.text.strip())
+    if type_car is not None:
+        await state.update_data(type_car=type_car)
+        await message.answer("Введите название:")
+        await state.set_state(AddProductStates.waiting_for_title)
+    else:
+        await message.answer("Такой марки я не знаю!")
 
 
 # Получаем название товара
@@ -302,13 +258,14 @@ async def receive_title_and_save(message: types.Message, state: FSMContext):
     yandex_link = user_data['yandex_link']
     image_link = user_data['image_link']
     price = user_data['price']
+    type_car = user_data['type_car']
 
     # Сохраняем данные в базу
     cursor.execute(
-        'INSERT INTO products (title, image_link, price, yandex_link) VALUES (?, ?, ?, ?)',
-        (title, image_link, price, yandex_link))
+        'INSERT INTO all_cars (title, image_link, price, yandex_link, type_car) VALUES (?, ?, ?, ?, ?)',
+        (title, image_link, price, yandex_link, type_car))
     conn.commit()
-    await message.answer("Товар успешно добавлен!")
+    await message.answer("Машина успешно добавлена!")
     await state.clear()
 
 
@@ -318,30 +275,9 @@ async def handle_callback_query(call: types.CallbackQuery):
 
 
 @dp.message(F.text)
-async def search_product1(message: types.Message):
-    user_input = message.text.lower()
-    cursor.execute(
-        "SELECT title, image_link, price, yandex_link FROM products WHERE LOWER(title) LIKE ?",
-        ('%' + user_input + '%',))
-    result = cursor.fetchone()
-    if result:
-        title, image_link, price, yandex_link = result
-        answer_text = f"""
-            Название: {title}
-            Цена: {price:.2f} руб.
-            Ссылка на фото: {image_link}
-            Ссылка на товар: {yandex_link}
-            """
-        await message.answer(answer_text)
-    else:
-        # await process_user_query(message)
-        await message.answer("Не удалось найти товар.")
-
-
-@dp.message(F.text)
 async def process_user_query(message: types.Message):
     user_input = message.text
-    result = search_product(user_input)
+    result = search_car(user_input)
 
     if result:
         answer_text = (
@@ -356,7 +292,7 @@ async def process_user_query(message: types.Message):
             parse_mode='HTML'
         )
     else:
-        await message.answer("Товар не найден или произошла ошибка.")
+        await message.answer("Такая марка машины не найдена.")
 
 
 # Функция запуска бота
