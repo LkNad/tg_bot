@@ -37,9 +37,9 @@ async def main():
 async def process_start_command(message: types.Message):
     button1 = types.InlineKeyboardButton(text="Достопримечательность",
                                          url="http://t.me/Dostoprimechatelnost_HeBot")
-    button2_1 = types.InlineKeyboardButton(text="Товар-бот (ссылка)",
+    button2_1 = types.InlineKeyboardButton(text="Поисковик авто (ссылка)",
                                          url="t.me/Tovar_HeBot")
-    button2 = types.InlineKeyboardButton(text="запуск Товар-бота", callback_data="tovar")
+    button2 = types.InlineKeyboardButton(text="запуск авто-поискового бота", callback_data="tovar")
     button3 = types.InlineKeyboardButton(text="Еда",
                                          url="http://t.me/Eda_HeBot")
 
