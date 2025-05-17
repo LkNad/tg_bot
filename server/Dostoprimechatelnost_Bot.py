@@ -1,5 +1,5 @@
 from deep_translator import GoogleTranslator
-from config import BOT_TOKEN
+from config_dostoprimechat import BOT_TOKEN
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update

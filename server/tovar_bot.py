@@ -90,7 +90,9 @@ async def start_tovars(message: types.Message):
 
     button1 = types.InlineKeyboardButton(text="Завершить сеанс",
                                          callback_data="back")
-    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[button1]])
+    button2 = types.InlineKeyboardButton(text="Global-бот (ссылка)",
+                                        url="t.me/MainCo6akaBot")
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[button1], [button2]])
 
     await message.answer(help_message, reply_markup=keyboard)
 

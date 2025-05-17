@@ -5,7 +5,6 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pyexpat.errors import messages
 
-
 from config import BOT_TOKEN
 import logging
 import sys
@@ -13,7 +12,6 @@ import subprocess
 import os
 
 # Защита от посторонних глаз
-
 
 
 logging.basicConfig(
@@ -35,12 +33,13 @@ async def main():
 
 @dp.message(Command('start'))
 async def process_start_command(message: types.Message):
-    button1 = types.InlineKeyboardButton(text="Достопримечательность",
+    button1 = types.InlineKeyboardButton(text="Найти достопримечательность",
                                          url="http://t.me/Dostoprimechatelnost_HeBot")
-    button2_1 = types.InlineKeyboardButton(text="Поисковик авто (ссылка)",
-                                         url="t.me/Tovar_HeBot")
-    button2 = types.InlineKeyboardButton(text="запуск авто-поискового бота", callback_data="tovar")
-    button3 = types.InlineKeyboardButton(text="Еда",
+    button2_1 = types.InlineKeyboardButton(text="Найти авто (ссылка на бота)",
+                                           url="t.me/Tovar_HeBot")
+    button2 = types.InlineKeyboardButton(text="запуск поиска авто",
+                                         callback_data="tovar")
+    button3 = types.InlineKeyboardButton(text="Найти еду",
                                          url="http://t.me/Eda_HeBot")
 
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
@@ -50,23 +49,21 @@ async def process_start_command(message: types.Message):
         [button3]
     ])
 
-    await message.reply("""Привет! Выбери, что ты хочешь найти:""",
+    await message.reply("""Привет! Выбери, что ты хочешь сделать:""",
                         reply_markup=keyboard)
-
 
 
 @dp.callback_query(lambda call: call.data == 'tovar')
 async def handle_tovar_button(call: types.CallbackQuery):
     global bot
-    await call.answer("Запускаю поиск товаров...", show_alert=True)
+    await call.answer("Запускаю поиск авто...", show_alert=True)
     await asyncio.create_task(start_tovar_mode())
-
-
 
 
 async def start_tovar_mode():
     from tovar_bot import main_tovar
     await main_tovar()
+
 
 if __name__ == '__main__':
     try:
