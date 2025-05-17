@@ -43,7 +43,9 @@ def sercher(response):
     if resp == "lada" or resp == "ваз":
         return "Lada"
     elif resp in lower_ru_marks:
-        return ru_marks[lower_ru_marks.index(resp)]
+        resp = ru_marks[lower_ru_marks.index(resp)]
+        resp = GoogleTranslator(source='ru', target='en').translate(resp)
+        return resp
     elif resp in lower_eng_marks:
         return eng_marks[lower_eng_marks.index(resp)]
     else:
